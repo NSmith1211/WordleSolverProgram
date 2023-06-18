@@ -9,7 +9,7 @@ namespace WordleSolver
 {
     public class Solver
     {
-        Dictionary<string, Letter> PossibleLetters = new Dictionary<string, Letter>()
+        public Dictionary<string, Letter> PossibleLetters = new Dictionary<string, Letter>()
         {
             {"A", new Letter("A")},
             {"B", new Letter("B")},
@@ -38,14 +38,18 @@ namespace WordleSolver
             {"Y", new Letter("Y")},
             {"Z", new Letter("Z")},
         };
+
         public int GuessesMade { get; private set; } = 0;
         public List<string> NotCorrectlyPlaced = new List<string>();
         public string[] CurrentCorrectArray = new string[5];
         public string[] CurrentGuess = new string[5];
-        public GuessWord GuessWord { get; private set; }
+        public string CurrentGuessString { get; set; }
+        public List<Letter> CorrectLetters = new List<Letter>();
+        public List<string> AvailableWords = new List<string>();
 
         public string[] MakeNewGuess(string[] currentCorrectArray)
         {
+            CurrentGuessString = "";
             //If first guess; then select random word.
             if(GuessesMade == 0)
             {
@@ -57,7 +61,7 @@ namespace WordleSolver
 
                 try
                 {
-                    List<string> potentialNextGuess = new List<string>();
+
                     string directory = Environment.CurrentDirectory;
                     string fileName = "answers.txt";
                     string fullPath = Path.Combine(directory, fileName);
@@ -65,20 +69,11 @@ namespace WordleSolver
                     {
                         //Convert whole file to one string
                         string wholeFile = sr.ReadToEnd();
-
                         //Convert one string to list of strings
-                        List<string> words = wholeFile.Split(" ").ToList();
-                        potentialNextGuess = (List<string>)words
-                       //How it matches to CurrentCorrectArray using LINQ
-                       .Where(word => word[0].ToString().Contains(CurrentCorrectArray[0]))
-                       .Where(word => word[1].ToString().Contains(CurrentCorrectArray[1]))
-                       .Where(word => word[1].ToString().Contains(CurrentCorrectArray[2]))
-                       .Where(word => word[1].ToString().Contains(CurrentCorrectArray[3]))
-                       .Where(word => word[1].ToString().Contains(CurrentCorrectArray[4]))
-                       .Where(word => word.Contains(GuessWord.CorrectLetters[0].ActualLetter));
+                        List<string> words = wholeFile.Split("\n").ToList();
+                        //How it matches to CurrentCorrectArray
+                        AvailableWords = words;
                     }
-                    
-
                 }
                 catch
                 {
@@ -87,19 +82,83 @@ namespace WordleSolver
 
                 }
 
+                for (int i = 0; i < CurrentCorrectArray.Length; i++)
+                {
+                    if (CurrentCorrectArray[i] != null && PossibleLetters[CurrentCorrectArray[i]].IsInCorrectPlace)
+                    {
+                        List<string> reducedWords = AvailableWords;
+                        reducedWords =
+                            (List<string>)(from word in reducedWords
+                             where word[i].ToString().ToUpper() == CurrentCorrectArray[i]
+                             select word).ToList();
+
+                        AvailableWords = reducedWords;
+                    }
+
+                }
+
+                foreach (string item in NotCorrectlyPlaced)
+                {
+                    List<string> reducedWords =
+                        (List<string>)AvailableWords.Where(word => word.Contains(item.ToUpper()))
+                        .Select(word => word).ToList();
+
+                    AvailableWords = reducedWords;
+                }
+
+                foreach (KeyValuePair<string, Letter> kvp in PossibleLetters)
+                {
+                    if (kvp.Value.IsEliminated)
+                    {
+                        List<string> reducedWords =
+                            (List<string>)AvailableWords.Where(word => !word.Contains(kvp.Key.ToUpper()))
+                            .Select(word => word).ToList();
+
+                        AvailableWords = reducedWords;
+                    }
+                }
+
+                if(AvailableWords.Count == 2315)
+                {
+                    string nextGuess = GetRandomStartingWord();
+                    Console.WriteLine();
+                    Console.WriteLine($"Next Guess:     {nextGuess}");
+                    CurrentGuess = ConvertCharArrayToStringArray(nextGuess);
+
+                }
+                else
+                {
+                    Random r = new Random();
+                    
+                    CurrentGuess = ConvertCharArrayToStringArray(AvailableWords[r.Next(0, AvailableWords.Count)]);
+                    Console.WriteLine();
+                    Console.Write("Next Guess:     ");
+                    foreach(string item in CurrentGuess)
+                    {
+                        Console.Write(item);
+                    }
+                }
+
+                foreach(string item in CurrentGuess)
+                {
+                    CurrentGuessString += item;
+                }
+                
+
+                this.GuessesMade++;
+                return CurrentGuess;
 
             }
-            
 
             return CurrentGuess;
-            this.GuessesMade++;
         }
 
         private  string[] MakeNewGuess()
         {
             this.CurrentGuess = ConvertCharArrayToStringArray(GetRandomStartingWord());
-            return CurrentGuess;
             this.GuessesMade++;
+            return CurrentGuess;
+            
         }
 
         
