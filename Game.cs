@@ -26,7 +26,7 @@ namespace WordleSolver
                     CheckGuess();
                 }
 
-                Solver.MakeNewGuess(Solver.CurrentCorrectArray);
+                Solver.MakeNewGuess();
                 CheckGuess();
                
                 if (IsGameOver())
@@ -36,6 +36,7 @@ namespace WordleSolver
                     if (this.TargetWord.ToUpper().Equals(Solver.CurrentGuessString.ToUpper()))
                     {
                         Console.WriteLine($"Correct! The word was {TargetWord}");
+                        Console.WriteLine($"It took {Solver.GuessesMade} turns to be solved");
                     }
                     else
                     {
@@ -48,7 +49,10 @@ namespace WordleSolver
                     if (response == "Y")
                     {
                         Console.Clear();
-                        StartGame();
+                        Game newGame = new Game();
+                        newGame.StartGame();
+                        Solver = new Solver();
+                        
                     }
                     else
                     {
